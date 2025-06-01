@@ -1,12 +1,19 @@
 package com.example.todoreminder
 
 import android.content.Context.MODE_PRIVATE
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.todoreminder.databinding.FragmentTodolistBinding
@@ -16,7 +23,6 @@ import com.example.todoreminder.retrofit.RetrofitClient
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.util.Date
 
 /**
  * A simple [Fragment] subclass as the default destination in the navigation.
@@ -47,37 +53,92 @@ class TodoListFragment : Fragment() {
             val sharedPref = requireActivity().getSharedPreferences("user_prefs", MODE_PRIVATE)
             val userId = sharedPref.getString("userId", null)
 
-
             recyclerView = binding.recyclerViewTodos
             recyclerView.layoutManager = LinearLayoutManager(requireContext())
 
             adapter = TodoAdapter(todoList) { todo ->
-                // TODO: Aggiorna il completamento nel backend se necessario
-                Toast.makeText(
-                    requireContext(),
-                    "Todo: ${todo.title} -> ${todo.completed}",
-                    Toast.LENGTH_SHORT
-                ).show()
                 toggleTodoCompletion(todo)
             }
-
             recyclerView.adapter = adapter
+
 
             loadTodos(userId.toString())
 
-            // Esempio fittizio di ToDo
-//            todoList.addAll(listOf(
-//                Todo(1, "Fare la spesa", false, System.currentTimeMillis(),"999"),
-//                Todo(2, "mangiare", false, System.currentTimeMillis(),"999"),
-//                Todo(3, "giocare", false, System.currentTimeMillis(),"999")
-//            ))
 
-//            adapter.notifyDataSetChanged()
+            val itemTouchHelperCallback = object : ItemTouchHelper.SimpleCallback(0, ItemTouchHelper.RIGHT) {
+                override fun onMove(
+                    recyclerView: RecyclerView,
+                    viewHolder: RecyclerView.ViewHolder,
+                    target: RecyclerView.ViewHolder
+                ) = false
+
+                override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
+                    val position = viewHolder.adapterPosition
+                    val todo = todoList[position]
+                    deleteTodo(todo.id!!)
+                }
+
+                override fun onChildDraw(
+                    c: Canvas,
+                    recyclerView: RecyclerView,
+                    viewHolder: RecyclerView.ViewHolder,
+                    dX: Float,
+                    dY: Float,
+                    actionState: Int,
+                    isCurrentlyActive: Boolean
+                ) {
+                    val itemView = viewHolder.itemView
+
+                    if (dX > 0) {
+                        val background = ColorDrawable(Color.RED)
+                        background.setBounds(
+                            itemView.left,
+                            itemView.top,
+                            itemView.left + dX.toInt(),
+                            itemView.bottom
+                        )
+                        background.draw(c)
+
+                        // Disegna la scritta DELETE con trasparenza in base allo swipe
+                        val paint = Paint().apply {
+                            color = Color.WHITE
+                            textSize = 40f
+                            isAntiAlias = true
+
+                            // Calcola l'opacità in base allo swipe (range 0-255)
+//                            val maxSwipe = itemView.width * 0.7f // dopo il 70% è completamente visibile
+//                            val alpha = ((dX / maxSwipe) * 255).coerceIn(0f, 255f)
+//                            this.alpha = alpha.toInt()
+                        }
+
+                        val text = "Delete"
+                        val textHeight = paint.descent() - paint.ascent()
+                        val textOffset = textHeight / 2 - paint.descent()
+                        val x = itemView.left + 50f
+                        val y = itemView.top + itemView.height / 2f + textOffset
+
+                        c.drawText(text, x, y, paint)
+                    } else {
+                        // Pulisce se lo swipe viene annullato
+                        val clear = Paint().apply {
+                            xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
+                        }
+                        c.drawRect(
+                            itemView.left.toFloat(),
+                            itemView.top.toFloat(),
+                            itemView.right.toFloat(),
+                            itemView.bottom.toFloat(),
+                            clear
+                        )
+                    }
+
+                    super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
+                }
 
 
-    //        binding.buttonFirst.setOnClickListener {
-    //            findNavController().navigate(R.id.action_FirstFragment_to_SecondFragment)
-    //        }
+
+            }
+            ItemTouchHelper(itemTouchHelperCallback).attachToRecyclerView(recyclerView)
         }
 
     override fun onDestroyView() {
@@ -93,25 +154,50 @@ class TodoListFragment : Fragment() {
                 todoList.addAll(todos)
                 adapter.notifyDataSetChanged()
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Errore caricamento: ${e.message}", Toast.LENGTH_LONG).show()
+                Toast.makeText(requireContext(), "Exception: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }
 
     private fun toggleTodoCompletion(todo: Todo) {
-//        todo.completed = !todo.completed // aggiorna localmente
+        val completedOrNot = todo.completed
 
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                val response = RetrofitClient.api.completeTodo(todo.id!!) //sono sicuro non sia null!
+                val response = RetrofitClient.api.completeTodo(todo.id!!, completedOrNot) //sono sicuro non sia null!
                 if (response.success) {
-                    Toast.makeText(requireContext(), "Aggiornato: ${todo.title}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), response.message, Toast.LENGTH_SHORT).show()
                     adapter.notifyDataSetChanged()
                 } else {
-                    Toast.makeText(requireContext(), "Errore: ${response.message}", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), response.message, Toast.LENGTH_SHORT).show()
                 }
             } catch (e: Exception) {
-                Toast.makeText(requireContext(), "Errore update: ${e.message}", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Exception: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun deleteTodo(id: Int) {
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val response = RetrofitClient.api.deleteTodo(id)
+                CoroutineScope(Dispatchers.Main).launch {
+                    if (response.success)
+                    {
+                        val position = todoList.indexOfFirst { it.id == id }
+                        if (position != -1) {
+                            todoList.removeAt(position)
+                            adapter.notifyItemRemoved(position)
+                        }
+                        Toast.makeText(requireContext(), response.message, Toast.LENGTH_SHORT).show()
+                    }
+                    else
+                    {
+                        Toast.makeText(requireContext(), response.message, Toast.LENGTH_SHORT).show()
+                    }
+                }
+            } catch (e: Exception) {
+                Toast.makeText(requireContext(), "Exception: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
     }

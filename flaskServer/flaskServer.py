@@ -73,15 +73,28 @@ def get_user_todos(user_id):
 
 @app.route("/todos/<int:todo_id>/complete", methods=["PUT"])
 def complete_todo(todo_id):
+    completed_str = request.args.get("completed", "true")
+    completed = completed_str.lower() == "true"
+
     result = db.todos.update_one(
         {"id": todo_id},
-        {"$set": {"completed": True}}
+        {"$set": {"completed": completed}}
     )
+
     if result.matched_count == 0:
         return jsonify({"success": False, "message": "Todo not found"}), 404
 
-    return jsonify({"success": True, "message": "Todo marked as completed"})
+    return jsonify({
+        "success": True,
+        "message": f"Todo marked as {'completed' if completed else 'incomplete'}"
+    })
 
+@app.route("/todos/<int:todo_id>", methods=["DELETE"])
+def delete_todo(todo_id):
+    result = db.todos.delete_one({"id": todo_id})
+    if result.deleted_count == 0:
+        return jsonify({"success": False, "message": "Todo not found"}), 404
+    return jsonify({"success": True, "message": "Todo deleted"})
 
 
 if __name__ == "__main__":
