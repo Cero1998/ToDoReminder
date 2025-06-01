@@ -1,5 +1,4 @@
-package com.example.todoreminder
-
+package com.example.todoreminder.models
 
 import android.view.LayoutInflater
 import android.view.View
@@ -8,7 +7,6 @@ import android.widget.CheckBox
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.example.todoreminder.R
-import com.example.todoreminder.models.Todo
 
 class TodoAdapter(
     private val todos: MutableList<Todo>,

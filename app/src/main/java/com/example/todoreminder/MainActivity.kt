@@ -19,6 +19,7 @@ import kotlinx.coroutines.withContext
 import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
+import androidx.core.content.edit
 
 class MainActivity : AppCompatActivity() {
     private lateinit var emailEditText: EditText
@@ -90,9 +91,14 @@ class MainActivity : AppCompatActivity() {
                     val response = RetrofitClient.api.login(request)
                     if (response.success)
                     {
-                            Toast.makeText(this@MainActivity, response.message, Toast.LENGTH_SHORT).show()
-                            // TODO: Vai alla schermata ToDoList
-                            startActivity(Intent(this@MainActivity, TodoActivity::class.java))
+                        val sharedPref = getSharedPreferences("user_prefs", MODE_PRIVATE)
+                        sharedPref.edit {
+                            putString("userId", response.userId) //mi salvo l'utente nella mem shared
+                        }
+
+                        Toast.makeText(this@MainActivity, response.message, Toast.LENGTH_SHORT).show()
+                        // TODO: Vai alla schermata ToDoList
+                        startActivity(Intent(this@MainActivity, TodoActivity::class.java))
                     }
                     else
                     {
@@ -102,7 +108,7 @@ class MainActivity : AppCompatActivity() {
                 catch (e: Exception)
                 {
                     withContext(Dispatchers.Main) {
-                        Toast.makeText(this@MainActivity, "Exception: ${e.message}", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(this@MainActivity, "Exception: ${e.message}", Toast.LENGTH_LONG).show()
                     }
                 }
             }

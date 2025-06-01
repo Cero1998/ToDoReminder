@@ -3,9 +3,9 @@ package com.example.todoreminder.models
 import android.location.Location
 
 data class Todo(
-    val id: String,
+    val id: Int? = null,
     var title: String,
     var completed: Boolean,
-    var date: String? = null,
-    var place: Location? = null
+    var date: Long,
+    var userId: String
 )

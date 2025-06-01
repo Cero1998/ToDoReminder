@@ -1,17 +1,12 @@
 package com.example.todoreminder
 
 import android.os.Bundle
-import android.widget.Toast
-import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
 import androidx.navigation.findNavController
 import androidx.navigation.ui.AppBarConfiguration
 import androidx.navigation.ui.navigateUp
 import androidx.navigation.ui.setupActionBarWithNavController
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.example.todoreminder.databinding.ActivityTodoBinding
-import com.example.todoreminder.models.Todo
 
 class TodoActivity : AppCompatActivity() {
 
@@ -31,7 +26,7 @@ class TodoActivity : AppCompatActivity() {
 
         navController.addOnDestinationChangedListener { _, destination, _ ->
             when (destination.id) {
-                R.id.SecondFragment -> binding.fabNewToDo.hide()
+                R.id.TodoNewFragment -> binding.fabNewToDo.hide()
                 else -> binding.fabNewToDo.show()
             }
         }
@@ -40,7 +35,7 @@ class TodoActivity : AppCompatActivity() {
         setupActionBarWithNavController(navController, appBarConfiguration)
 
         binding.fabNewToDo.setOnClickListener {
-            navController.navigate(R.id.action_FirstFragment_to_SecondFragment)
+            navController.navigate(R.id.action_TodoListFragment_to_TodoNewFragment)
 
         }
     }
