@@ -12,6 +12,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.ActivityCompat
 import androidx.fragment.app.Fragment
 import androidx.navigation.fragment.findNavController
@@ -32,10 +34,15 @@ import java.util.concurrent.TimeUnit
  */
 class TodoNewFragment : Fragment() {
 
+    private lateinit var calendarPermissionsLauncher: ActivityResultLauncher<Array<String>>
+    private var pendingCalendarData: Pair<String, Long>? = null
+
     private var _binding: FragmentTodonewBinding? = null
     private var selectedDate: Long = System.currentTimeMillis()
+    private var shouldNavigateAfterPermissions = false
 
-        // This property is only valid between onCreateView and
+
+    // This property is only valid between onCreateView and
         // onDestroyView.
         private val binding get() = _binding!!
 
@@ -44,7 +51,38 @@ class TodoNewFragment : Fragment() {
             savedInstanceState: Bundle?
         ): View {
 
-          _binding = FragmentTodonewBinding.inflate(inflater, container, false)
+
+
+            calendarPermissionsLauncher = registerForActivityResult(
+                ActivityResultContracts.RequestMultiplePermissions()
+            ) { permissions ->
+                val granted = permissions[Manifest.permission.WRITE_CALENDAR] == true &&
+                        permissions[Manifest.permission.READ_CALENDAR] == true
+                if (granted) {
+                    pendingCalendarData?.let { (title, date) ->
+                        val oneDayInMillis = 24 * 60 * 60 * 1000
+                        val oneMinuteInMillis = 60 * 1000
+                        val intent = Intent(Intent.ACTION_INSERT)
+                            .setData(CalendarContract.Events.CONTENT_URI)
+                            .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, date)
+                            .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, date + oneDayInMillis - oneMinuteInMillis)
+                            .putExtra(CalendarContract.Events.TITLE, title)
+                            .putExtra(CalendarContract.Events.DESCRIPTION, "Created with ToDoReminder app")
+                            .putExtra(CalendarContract.Events.AVAILABILITY, CalendarContract.Events.AVAILABILITY_BUSY)
+                        startActivity(intent)
+                    }
+                } else {
+                    Toast.makeText(requireContext(), "Calendar permissions denied", Toast.LENGTH_SHORT).show()
+                }
+
+                if (shouldNavigateAfterPermissions) {
+                    shouldNavigateAfterPermissions = false
+                    findNavController().navigate(R.id.action_TodoNewFragment_to_TodoListFragment)
+                }
+            }
+
+
+            _binding = FragmentTodonewBinding.inflate(inflater, container, false)
           return binding.root
 
         }
@@ -82,10 +120,7 @@ class TodoNewFragment : Fragment() {
                         if (response.success)
                         {
                             Toast.makeText(requireContext(), response.message, Toast.LENGTH_SHORT).show()
-                            if(!hasNotificationPermissions())
-                            {
-                                requestNotificationPermissions()
-                            }
+
                             if(hasNotificationPermissions())
                             {
                                 scheduleNotificationWithWorkManager(requireContext(), title, selectedDate)
@@ -93,23 +128,32 @@ class TodoNewFragment : Fragment() {
 
                             if(binding.switch1SaveOnCalendar.isChecked)
                             {
+                                pendingCalendarData = Pair(title, selectedDate)
                                 if (!hasCalendarPermissions()) {
-                                    requestCalendarPermissions()
+                                    shouldNavigateAfterPermissions = true
+                                    calendarPermissionsLauncher.launch(
+                                        arrayOf(
+                                            Manifest.permission.WRITE_CALENDAR,
+                                            Manifest.permission.READ_CALENDAR
+                                        )
+                                    )
+                                    return@launch // Interrompe il proseguimento. Parte il codice di calendarPermissionsLauncher. Come break in un ciclo.
                                 }
-                                if(hasCalendarPermissions())
+                                else
                                 {
                                     val oneDayInMillis = 24 * 60 * 60 * 1000
                                     val oneMinuteInMillis = 60 * 1000
                                     val intent = Intent(Intent.ACTION_INSERT)
                                         .setData(CalendarContract.Events.CONTENT_URI)
                                         .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, selectedDate)
-                                        .putExtra(CalendarContract.EXTRA_EVENT_END_TIME,  selectedDate + oneDayInMillis -  oneMinuteInMillis)
+                                        .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, selectedDate + oneDayInMillis - oneMinuteInMillis)
                                         .putExtra(CalendarContract.Events.TITLE, title)
                                         .putExtra(CalendarContract.Events.DESCRIPTION, "Created with ToDoReminder app")
                                         .putExtra(CalendarContract.Events.AVAILABILITY, CalendarContract.Events.AVAILABILITY_BUSY)
                                     startActivity(intent)
                                 }
                             }
+
                             findNavController().navigate(R.id.action_TodoNewFragment_to_TodoListFragment)
                         } else {
                             Toast.makeText(requireContext(), response.error, Toast.LENGTH_SHORT).show()
@@ -202,6 +246,29 @@ class TodoNewFragment : Fragment() {
 
         val workRequest = builder.build()
         WorkManager.getInstance(context).enqueue(workRequest)
+    }
+
+    private fun checkAndRequestCalendarPermission(title: String, date: Long) {
+        if (hasCalendarPermissions()) {
+            val oneDayInMillis = 24 * 60 * 60 * 1000
+            val oneMinuteInMillis = 60 * 1000
+            val intent = Intent(Intent.ACTION_INSERT)
+                .setData(CalendarContract.Events.CONTENT_URI)
+                .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, date)
+                .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, date + oneDayInMillis - oneMinuteInMillis)
+                .putExtra(CalendarContract.Events.TITLE, title)
+                .putExtra(CalendarContract.Events.DESCRIPTION, "Created with ToDoReminder app")
+                .putExtra(CalendarContract.Events.AVAILABILITY, CalendarContract.Events.AVAILABILITY_BUSY)
+            startActivity(intent)
+        } else {
+            pendingCalendarData = Pair(title, date)
+            calendarPermissionsLauncher.launch(
+                arrayOf(
+                    Manifest.permission.WRITE_CALENDAR,
+                    Manifest.permission.READ_CALENDAR
+                )
+            )
+        }
     }
 
 }

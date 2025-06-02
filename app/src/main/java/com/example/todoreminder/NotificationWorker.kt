@@ -30,7 +30,7 @@ class NotificationWorker(
         }
 
         val notification = NotificationCompat.Builder(applicationContext, channelId)
-            .setSmallIcon(R.drawable.ic_launcher_foreground) // Assicurati di avere un'icona
+            .setSmallIcon(R.drawable.logo_todoreminderappwhite)
             .setContentTitle("Reminder")
             .setContentText("Don't forget: $title is tomorrow!")
             .setPriority(NotificationCompat.PRIORITY_HIGH)

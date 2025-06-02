@@ -1,12 +1,17 @@
 package com.example.todoreminder
 
+import android.Manifest
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.widget.Button
 import android.widget.EditText
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.ActivityResultLauncher
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.app.ActivityCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.example.todoreminder.retrofit.LoginRequest
@@ -20,6 +25,7 @@ import retrofit2.Call
 import retrofit2.Callback
 import retrofit2.Response
 import androidx.core.content.edit
+import androidx.navigation.fragment.findNavController
 
 class MainActivity : AppCompatActivity() {
     private lateinit var emailEditText: EditText
@@ -27,6 +33,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var loginButton: Button
     private lateinit var registerButton: Button
     private val retrofitClient = RetrofitClient
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -36,6 +43,11 @@ class MainActivity : AppCompatActivity() {
             val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
             v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
             insets
+        }
+
+        if(!hasNotificationPermissions())
+        {
+            requestNotificationPermissions()
         }
 
         emailEditText = findViewById(R.id.editTextMail)
@@ -112,5 +124,19 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+    }
+    private fun hasNotificationPermissions(): Boolean{
+        val context = this@MainActivity
+        return ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+    }
+
+
+    private fun requestNotificationPermissions(){
+        requestPermissions(
+            arrayOf(
+                Manifest.permission.POST_NOTIFICATIONS
+            ),
+            124 // requestCode
+        )
     }
 }
