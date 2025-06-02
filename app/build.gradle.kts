@@ -64,4 +64,6 @@ dependencies {
     kapt("com.squareup.moshi:moshi-kotlin-codegen:$moshi_version")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.6.4")
 
+    implementation(libs.androidx.work.runtime.ktx)
+
 }

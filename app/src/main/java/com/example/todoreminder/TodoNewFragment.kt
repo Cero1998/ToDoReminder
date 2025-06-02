@@ -20,6 +20,9 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContentResolverCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.workDataOf
 import com.example.todoreminder.MainActivity
 import com.example.todoreminder.databinding.FragmentTodonewBinding
 import com.example.todoreminder.retrofit.CreateTodoRequest
@@ -28,6 +31,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.util.Calendar
+import java.util.concurrent.TimeUnit
 
 /**
  * A simple [Fragment] subclass as the second destination in the navigation.
@@ -84,6 +88,14 @@ class TodoNewFragment : Fragment() {
                         if (response.success)
                         {
                             Toast.makeText(requireContext(), response.message, Toast.LENGTH_SHORT).show()
+                            if(!hasNotificationPermissions())
+                            {
+                                requestNotificationPermissions()
+                            }
+                            if(hasNotificationPermissions())
+                            {
+                                scheduleNotificationWithWorkManager(requireContext(), title, selectedDate)
+                            }
 
                             if(binding.switch1SaveOnCalendar.isChecked)
                             {
@@ -148,13 +160,54 @@ class TodoNewFragment : Fragment() {
                 ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED
     }
 
+    private fun hasNotificationPermissions(): Boolean{
+        val context = requireContext()
+        return ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
+    }
+
     private fun requestCalendarPermissions() {
         requestPermissions(
             arrayOf(
                 Manifest.permission.WRITE_CALENDAR,
-                Manifest.permission.READ_CALENDAR
+                Manifest.permission.READ_CALENDAR,
             ),
             123 // requestCode
         )
     }
+
+    private fun requestNotificationPermissions(){
+        requestPermissions(
+            arrayOf(
+                Manifest.permission.POST_NOTIFICATIONS
+            ),
+            124 // requestCode
+        )
+    }
+
+    fun scheduleNotificationWithWorkManager(context: Context, todoTitle: String, todoDateMillis: Long) {
+        val now = System.currentTimeMillis()
+        val triggerTime = Calendar.getInstance().apply {
+            timeInMillis = todoDateMillis
+            add(Calendar.DAY_OF_YEAR, -1)
+            set(Calendar.HOUR_OF_DAY, 0)
+            set(Calendar.MINUTE, 0)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
+
+        val delay = triggerTime - now
+
+        val data = workDataOf("title" to todoTitle)
+
+        val builder = OneTimeWorkRequestBuilder<NotificationWorker>()
+            .setInputData(data)
+
+        if (delay > 0) {
+            builder.setInitialDelay(delay, TimeUnit.MILLISECONDS)
+        }
+
+        val workRequest = builder.build()
+        WorkManager.getInstance(context).enqueue(workRequest)
+    }
+
 }
