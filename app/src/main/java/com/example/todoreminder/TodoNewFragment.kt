@@ -1,13 +1,23 @@
 package com.example.todoreminder
 
+import android.Manifest
 import android.app.DatePickerDialog
+import android.content.ContentResolver
+import android.content.ContentValues
+import android.content.Context
 import android.content.Context.MODE_PRIVATE
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Bundle
+import android.provider.CalendarContract
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContentResolverCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.fragment.findNavController
 import com.example.todoreminder.MainActivity
@@ -50,7 +60,6 @@ class TodoNewFragment : Fragment() {
             binding.textViewSelectedDate.text = "Date: ${android.text.format.DateFormat.format("dd/MM/yyyy", selectedDate)}"
 
             binding.buttonSaveNewTodo.setOnClickListener {
-                //logica per salvare
 
                 val title = binding.editTextNewTodoName.text.toString().trim()
 
@@ -60,7 +69,6 @@ class TodoNewFragment : Fragment() {
                 }
                 val sharedPref = requireActivity().getSharedPreferences("user_prefs", MODE_PRIVATE)
                 val userId = sharedPref.getString("userId", null)
-
 
                 val todoRequest = CreateTodoRequest(
                     title = title,
@@ -73,8 +81,29 @@ class TodoNewFragment : Fragment() {
                 CoroutineScope(Dispatchers.Main).launch {
                     try {
                         val response = RetrofitClient.api.createTodo(todoRequest)
-                        if (response.success) {
+                        if (response.success)
+                        {
                             Toast.makeText(requireContext(), response.message, Toast.LENGTH_SHORT).show()
+
+                            if(binding.switch1SaveOnCalendar.isChecked)
+                            {
+                                if (!hasCalendarPermissions()) {
+                                    requestCalendarPermissions()
+                                }
+                                if(hasCalendarPermissions())
+                                {
+                                    val oneDayInMillis = 24 * 60 * 60 * 1000
+                                    val oneMinuteInMillis = 60 * 1000
+                                    val intent = Intent(Intent.ACTION_INSERT)
+                                        .setData(CalendarContract.Events.CONTENT_URI)
+                                        .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, selectedDate)
+                                        .putExtra(CalendarContract.EXTRA_EVENT_END_TIME,  selectedDate + oneDayInMillis -  oneMinuteInMillis)
+                                        .putExtra(CalendarContract.Events.TITLE, title)
+                                        .putExtra(CalendarContract.Events.DESCRIPTION, "Created with ToDoReminder app")
+                                        .putExtra(CalendarContract.Events.AVAILABILITY, CalendarContract.Events.AVAILABILITY_BUSY)
+                                    startActivity(intent)
+                                }
+                            }
                             findNavController().navigate(R.id.action_TodoNewFragment_to_TodoListFragment)
                         } else {
                             Toast.makeText(requireContext(), response.error, Toast.LENGTH_SHORT).show()
@@ -111,5 +140,21 @@ class TodoNewFragment : Fragment() {
         ).apply {
             datePicker.minDate = System.currentTimeMillis()
         }.show()
+    }
+
+    private fun hasCalendarPermissions(): Boolean {
+        val context = requireContext()
+        return ActivityCompat.checkSelfPermission(context, Manifest.permission.WRITE_CALENDAR) == PackageManager.PERMISSION_GRANTED &&
+                ActivityCompat.checkSelfPermission(context, Manifest.permission.READ_CALENDAR) == PackageManager.PERMISSION_GRANTED
+    }
+
+    private fun requestCalendarPermissions() {
+        requestPermissions(
+            arrayOf(
+                Manifest.permission.WRITE_CALENDAR,
+                Manifest.permission.READ_CALENDAR
+            ),
+            123 // requestCode
+        )
     }
 }

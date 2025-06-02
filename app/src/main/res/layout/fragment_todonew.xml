@@ -41,19 +41,32 @@
         android:text="Pick a date"
         app:layout_constraintBottom_toTopOf="@+id/textViewSelectedDate"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.501"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/editTextNewTodoName"
-        app:layout_constraintVertical_bias="0.733" />
+        app:layout_constraintVertical_bias="0.614" />
 
     <TextView
         android:id="@+id/textViewSelectedDate"
-        android:layout_width="378dp"
-        android:layout_height="83dp"
-        android:layout_marginBottom="208dp"
+        android:layout_width="187dp"
+        android:layout_height="53dp"
+        android:layout_marginBottom="244dp"
         android:text="Date: "
         android:textSize="18sp"
         app:layout_constraintBottom_toTopOf="@+id/buttonSaveNewTodo"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.07"
         app:layout_constraintStart_toStartOf="parent" />
+
+    <Switch
+        android:id="@+id/switch1SaveOnCalendar"
+        android:layout_width="165dp"
+        android:layout_height="53dp"
+        android:layout_marginTop="44dp"
+        android:layout_marginEnd="16dp"
+        android:text="Save on Calendar"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/textViewSelectedDate"
+        app:layout_constraintTop_toBottomOf="@+id/buttonSelectDate" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -97,7 +97,6 @@ class MainActivity : AppCompatActivity() {
                         }
 
                         Toast.makeText(this@MainActivity, response.message, Toast.LENGTH_SHORT).show()
-                        // TODO: Vai alla schermata ToDoList
                         startActivity(Intent(this@MainActivity, TodoActivity::class.java))
                     }
                     else
