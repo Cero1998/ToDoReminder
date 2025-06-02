@@ -23,6 +23,8 @@
 
         <action
             android:id="@+id/action_TodoNewFragment_to_TodoListFragment"
-            app:destination="@id/TodoListFragment" />
+            app:destination="@id/TodoListFragment"
+            app:popUpTo="@id/TodoListFragment"
+            app:popUpToInclusive="true"/>
     </fragment>
 </navigation>

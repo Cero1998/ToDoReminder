@@ -13,6 +13,8 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.Toast
+import androidx.activity.OnBackPressedCallback
+import androidx.appcompat.app.AlertDialog
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -49,6 +51,13 @@ class TodoListFragment : Fragment() {
         }
 
         override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+            requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner,
+                object : OnBackPressedCallback(true) {
+                    override fun handleOnBackPressed() {
+                        showExitConfirmationDialog()
+                    }
+                })
+
             super.onViewCreated(view, savedInstanceState)
             val sharedPref = requireActivity().getSharedPreferences("user_prefs", MODE_PRIVATE)
             val userId = sharedPref.getString("userId", null)
@@ -99,16 +108,10 @@ class TodoListFragment : Fragment() {
                         )
                         background.draw(c)
 
-                        // Disegna la scritta DELETE con trasparenza in base allo swipe
                         val paint = Paint().apply {
                             color = Color.WHITE
                             textSize = 40f
                             isAntiAlias = true
-
-                            // Calcola l'opacità in base allo swipe (range 0-255)
-//                            val maxSwipe = itemView.width * 0.7f // dopo il 70% è completamente visibile
-//                            val alpha = ((dX / maxSwipe) * 255).coerceIn(0f, 255f)
-//                            this.alpha = alpha.toInt()
                         }
 
                         val text = "Delete"
@@ -119,7 +122,6 @@ class TodoListFragment : Fragment() {
 
                         c.drawText(text, x, y, paint)
                     } else {
-                        // Pulisce se lo swipe viene annullato
                         val clear = Paint().apply {
                             xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
                         }
@@ -131,12 +133,8 @@ class TodoListFragment : Fragment() {
                             clear
                         )
                     }
-
                     super.onChildDraw(c, recyclerView, viewHolder, dX, dY, actionState, isCurrentlyActive)
                 }
-
-
-
             }
             ItemTouchHelper(itemTouchHelperCallback).attachToRecyclerView(recyclerView)
         }
@@ -201,4 +199,16 @@ class TodoListFragment : Fragment() {
             }
         }
     }
+
+    private fun showExitConfirmationDialog() {
+        AlertDialog.Builder(requireContext())
+            .setTitle("Exit app")
+            .setMessage("Are you sure you want to exit the app?")
+            .setPositiveButton("Yes") { _, _ ->
+                requireActivity().finish()
+            }
+            .setNegativeButton("No", null)
+            .show()
+    }
+
 }
