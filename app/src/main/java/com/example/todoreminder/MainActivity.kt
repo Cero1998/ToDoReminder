@@ -32,7 +32,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var passwordEditText: EditText
     private lateinit var loginButton: Button
     private lateinit var registerButton: Button
-    private val retrofitClient = RetrofitClient
 
 
     override fun onCreate(savedInstanceState: Bundle?) {

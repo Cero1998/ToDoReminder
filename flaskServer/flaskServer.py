@@ -67,7 +67,7 @@ def add_todo():
 def get_user_todos(user_id):
     todos = list(db.todos.find({"userId": user_id}))
     for todo in todos:
-        todo["_id"] = str(todo["_id"])  # MongoDB ObjectId non è serializzabile
+        todo["_id"] = str(todo["_id"])
     return jsonify(todos)
 
 

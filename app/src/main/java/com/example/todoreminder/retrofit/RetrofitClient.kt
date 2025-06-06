@@ -6,7 +6,7 @@
     import retrofit2.converter.moshi.MoshiConverterFactory
 
 
-    object RetrofitClient {
+    object RetrofitClient { //essendo un object è un singleton
         private const val BASE_URL = "http://10.147.237.217:5000" //CAMBIARE OGNI VOLTA CHE SI FA DA HOTSPOT
 
         private val moshi = Moshi.Builder()

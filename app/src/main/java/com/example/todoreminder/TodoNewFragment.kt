@@ -203,25 +203,6 @@ class TodoNewFragment : Fragment() {
         return ActivityCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
     }
 
-    private fun requestCalendarPermissions() {
-        requestPermissions(
-            arrayOf(
-                Manifest.permission.WRITE_CALENDAR,
-                Manifest.permission.READ_CALENDAR,
-            ),
-            123 // requestCode
-        )
-    }
-
-    private fun requestNotificationPermissions(){
-        requestPermissions(
-            arrayOf(
-                Manifest.permission.POST_NOTIFICATIONS
-            ),
-            124 // requestCode
-        )
-    }
-
     fun scheduleNotificationWithWorkManager(context: Context, todoTitle: String, todoDateMillis: Long) {
         val now = System.currentTimeMillis()
         val triggerTime = Calendar.getInstance().apply {
@@ -247,28 +228,4 @@ class TodoNewFragment : Fragment() {
         val workRequest = builder.build()
         WorkManager.getInstance(context).enqueue(workRequest)
     }
-
-    private fun checkAndRequestCalendarPermission(title: String, date: Long) {
-        if (hasCalendarPermissions()) {
-            val oneDayInMillis = 24 * 60 * 60 * 1000
-            val oneMinuteInMillis = 60 * 1000
-            val intent = Intent(Intent.ACTION_INSERT)
-                .setData(CalendarContract.Events.CONTENT_URI)
-                .putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, date)
-                .putExtra(CalendarContract.EXTRA_EVENT_END_TIME, date + oneDayInMillis - oneMinuteInMillis)
-                .putExtra(CalendarContract.Events.TITLE, title)
-                .putExtra(CalendarContract.Events.DESCRIPTION, "Created with ToDoReminder app")
-                .putExtra(CalendarContract.Events.AVAILABILITY, CalendarContract.Events.AVAILABILITY_BUSY)
-            startActivity(intent)
-        } else {
-            pendingCalendarData = Pair(title, date)
-            calendarPermissionsLauncher.launch(
-                arrayOf(
-                    Manifest.permission.WRITE_CALENDAR,
-                    Manifest.permission.READ_CALENDAR
-                )
-            )
-        }
-    }
-
 }
